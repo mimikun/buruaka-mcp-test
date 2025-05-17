@@ -35,8 +35,8 @@ interface CharacterResponse {
   id: number;
   isReleased: boolean;
   isPlayable: boolean;
-  character: Character[];
-  info: CharacterInfo[];
+  character: Character;
+  info: CharacterInfo;
 }
 
 interface Character {
@@ -108,8 +108,8 @@ server.tool(
     }
 
     // 最初のキャラクター情報と追加情報を使用
-    const character = characterData.character[0];
-    const info = characterData.info[0];
+    const character = characterData.character;
+    const info = characterData.info;
 
     // フォーマット関数を使用してキャラクター情報を整形
     const characterText = formatCharacter(character, info);
