@@ -6,9 +6,8 @@ WIP WIP WIP
 
 Unofficial Blue Archive MCP server.
 
-Using https://github.com/arufars/api-blue-archive
+Use https://github.com/torikushiii/BlueArchiveAPI
 
 ## Tools
 
-- Get student data
-- Get academy data
+- WIP
