@@ -37,10 +37,6 @@ interface CharacterResponse {
   isPlayable: boolean;
   character: Character[];
   info: CharacterInfo[];
-  image: CharacterImage[];
-  stat: CharacterStat[];
-  terrain: CharacterTerrain[];
-  skill: CharacterSkill[];
 }
 
 interface Character {
@@ -68,185 +64,61 @@ interface CharacterInfo {
   voiceActor: string;
 }
 
-interface CharacterImage {
-  icon: string;
-  lobby: string;
-  portrait: string;
-}
-
-interface CharacterStat {
-  id: number;
-  attackLevel1: number;
-  attackLevel100: number;
-  maxHPLevel1: number;
-  maxHPLevel100: number;
-  defenseLevel1: number;
-  defenseLevel100: number;
-  healPowerLevel1: number;
-  healPowerLevel100: number;
-  ammoCount: number;
-  ammoCost: number;
-  range: number;
-  moveSpeed: number;
-  streetMood: string;
-  outdoorMood: string;
-  indoorMood: string;
-}
-
-interface CharacterTerrain {
-  urban: Terrain[];
-  outdoor: Terrain[];
-  indoor: Terrain[];
-}
-
-interface Terrain {
-  DamageDealt: string;
-  ShieldBlockRate: string;
-}
-
-interface CharacterSkill {
-  ex: Skill[];
-  normal: Skill[];
-  passive: Skill[];
-  sub: Skill[];
-}
-
-// かくの面倒だしそもそもスキル情報はいまは要らなかった
-interface Skill {
-  [];
+// Format character data
+function formatCharacter(character: Character, info: CharacterInfo): string {
+  return [
+    `名前: ${character.fullname || character.name || "不明"}`,
+    `プロフィール: ${character.profile || "情報なし"}`,
+    `年齢: ${info.age || "不明"}`,
+    `誕生日: ${info.birthDate || "不明"}`,
+    `身長: ${info.height || "不明"}`,
+    `絵師: ${info.artist || "不明"}`,
+    `部活: ${info.club || "不明"}`,
+    `学園: ${info.school || "不明"}${info.schoolYear ? ` ${info.schoolYear}年` : ""}`,
+    `声: ${info.voiceActor || "不明"}`,
+    `レアリティ: ${character.rarity || "不明"}`,
+    `防具タイプ: ${character.armorType || "不明"}`,
+    `弾薬タイプ: ${character.bulletType || "不明"}`,
+    `ポジション: ${character.position || "不明"}`,
+    `役割: ${character.role || "不明"}`,
+  ].join("\n");
 }
 
 // Register buruaka tools
 server.tool(
-  "get-name",
-  "Get weather alerts for a state",
+  "get-character",
+  "Get character name",
   {
-    state: z.string().length(2).describe("Two-letter state code (e.g. CA, NY)"),
+    name: z.string().describe("SHOULD input Japanese Kata-Kana"),
   },
-  async ({ state }) => {
-    const stateCode = state.toUpperCase();
-    const alertsUrl = `${API_BASE}/alerts?area=${stateCode}`;
-    const alertsData = await makeNWSRequest<AlertsResponse>(alertsUrl);
+  async ({ name }) => {
+    const characterName = name;
+    const characterUrl = `${API_BASE}/character/${characterName}?region=japan`;
+    const characterData = await makeAPIRequest<CharacterResponse>(characterUrl);
 
-    if (!alertsData) {
+    if (!characterData) {
       return {
         content: [
           {
             type: "text",
-            text: "Failed to retrieve alerts data",
+            text: "Failed to retrieve character data",
           },
         ],
       };
     }
 
-    const features = alertsData.features || [];
-    if (features.length === 0) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `No active alerts for ${stateCode}`,
-          },
-        ],
-      };
-    }
+    // 最初のキャラクター情報と追加情報を使用
+    const character = characterData.character[0];
+    const info = characterData.info[0];
 
-    const formattedAlerts = features.map(formatAlert);
-    const alertsText = `Active alerts for ${stateCode}:\n\n${formattedAlerts.join("\n")}`;
+    // フォーマット関数を使用してキャラクター情報を整形
+    const characterText = formatCharacter(character, info);
 
     return {
       content: [
         {
           type: "text",
-          text: alertsText,
-        },
-      ],
-    };
-  },
-);
-
-server.tool(
-  "get-forecast",
-  "Get weather forecast for a location",
-  {
-    latitude: z.number().min(-90).max(90).describe("Latitude of the location"),
-    longitude: z
-      .number()
-      .min(-180)
-      .max(180)
-      .describe("Longitude of the location"),
-  },
-  async ({ latitude, longitude }) => {
-    // Get grid point data
-    const pointsUrl = `${API_BASE}/points/${latitude.toFixed(4)},${longitude.toFixed(4)}`;
-    const pointsData = await makeNWSRequest<PointsResponse>(pointsUrl);
-
-    if (!pointsData) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Failed to retrieve grid point data for coordinates: ${latitude}, ${longitude}. This location may not be supported by the Blue Archive API (only US locations are supported).`,
-          },
-        ],
-      };
-    }
-
-    const forecastUrl = pointsData.properties?.forecast;
-    if (!forecastUrl) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "Failed to get forecast URL from grid point data",
-          },
-        ],
-      };
-    }
-
-    // Get forecast data
-    const forecastData = await makeNWSRequest<ForecastResponse>(forecastUrl);
-    if (!forecastData) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "Failed to retrieve forecast data",
-          },
-        ],
-      };
-    }
-
-    const periods = forecastData.properties?.periods || [];
-    if (periods.length === 0) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "No forecast periods available",
-          },
-        ],
-      };
-    }
-
-    // Format forecast periods
-    const formattedForecast = periods.map((period: ForecastPeriod) =>
-      [
-        `${period.name || "Unknown"}:`,
-        `Temperature: ${period.temperature || "Unknown"}°${period.temperatureUnit || "F"}`,
-        `Wind: ${period.windSpeed || "Unknown"} ${period.windDirection || ""}`,
-        `${period.shortForecast || "No forecast available"}`,
-        "---",
-      ].join("\n"),
-    );
-
-    const forecastText = `Forecast for ${latitude}, ${longitude}:\n\n${formattedForecast.join("\n")}`;
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: forecastText,
+          text: characterText,
         },
       ],
     };
