@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-const API_BASE = "https://api.ennead.cc/buruaka"
+const API_BASE = "https://api.ennead.cc/buruaka";
 
 // Create server instance
 const server = new McpServer({
@@ -28,54 +28,92 @@ async function makeAPIRequest<T>(url: string): Promise<T | null> {
   }
 }
 
-// TODO: its
 // Created based on Blue Archive API response
-interface AlertFeature {
-  properties: {
-    event?: string;
-    areaDesc?: string;
-    severity?: string;
-    status?: string;
-    headline?: string;
-  };
+// TODO: its
+// character data response
+interface CharacterResponse {
+  id: number;
+  isReleased: boolean;
+  isPlayable: boolean;
+  character: Character[];
+  info: CharacterInfo[];
+  image: CharacterImage[];
+  stat: CharacterStat[];
+  terrain: CharacterTerrain[];
+  skill: CharacterSkill[];
 }
 
-// Format alert data
-function formatAlert(feature: AlertFeature): string {
-  const props = feature.properties;
-  return [
-    `Event: ${props.event || "Unknown"}`,
-    `Area: ${props.areaDesc || "Unknown"}`,
-    `Severity: ${props.severity || "Unknown"}`,
-    `Status: ${props.status || "Unknown"}`,
-    `Headline: ${props.headline || "No headline"}`,
-    "---",
-  ].join("\n");
+interface Character {
+  name: string;
+  fullname: string;
+  baseStar: number;
+  rarity: string;
+  armorType: string;
+  bulletType: string;
+  position: string;
+  role: string;
+  squadType: string;
+  weaponType: string;
+  profile: string;
 }
 
-interface ForecastPeriod {
-  name?: string;
-  temperature?: number;
-  temperatureUnit?: string;
-  windSpeed?: string;
-  windDirection?: string;
-  shortForecast?: string;
+interface CharacterInfo {
+  age: number;
+  birthDate: string;
+  height: string;
+  artist: string;
+  club: string;
+  school: string;
+  schoolYear: string;
+  voiceActor: string;
 }
 
-interface AlertsResponse {
-  features: AlertFeature[];
+interface CharacterImage {
+  icon: string;
+  lobby: string;
+  portrait: string;
 }
 
-interface PointsResponse {
-  properties: {
-    forecast?: string;
-  };
+interface CharacterStat {
+  id: number;
+  attackLevel1: number;
+  attackLevel100: number;
+  maxHPLevel1: number;
+  maxHPLevel100: number;
+  defenseLevel1: number;
+  defenseLevel100: number;
+  healPowerLevel1: number;
+  healPowerLevel100: number;
+  ammoCount: number;
+  ammoCost: number;
+  range: number;
+  moveSpeed: number;
+  streetMood: string;
+  outdoorMood: string;
+  indoorMood: string;
 }
 
-interface ForecastResponse {
-  properties: {
-    periods: ForecastPeriod[];
-  };
+interface CharacterTerrain {
+  urban: Terrain[];
+  outdoor: Terrain[];
+  indoor: Terrain[];
+}
+
+interface Terrain {
+  DamageDealt: string;
+  ShieldBlockRate: string;
+}
+
+interface CharacterSkill {
+  ex: Skill[];
+  normal: Skill[];
+  passive: Skill[];
+  sub: Skill[];
+}
+
+// かくの面倒だしそもそもスキル情報はいまは要らなかった
+interface Skill {
+  [];
 }
 
 // Register buruaka tools
